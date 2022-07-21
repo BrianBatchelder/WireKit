@@ -93,7 +93,7 @@ extension WKRequest {
             WKHTTPHeaderField.contentType.rawValue: contentType.rawValue,
             WKHTTPHeaderField.acceptType.rawValue: contentType.rawValue
         ]
-        request.allHTTPHeaderFields = defaultHeaders.merging(headers ?? [:], uniquingKeysWith: { (first, _) in first })
+        request.allHTTPHeaderFields = (headers ?? [:]).merging(defaultHeaders, uniquingKeysWith: { (first, _) in first })
         return request
     }
     
