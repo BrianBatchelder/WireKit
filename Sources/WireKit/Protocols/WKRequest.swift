@@ -13,6 +13,7 @@ public typealias WKHTTPHeaders = [String: String]
 
 public enum WKHTTPContentType: String {
     case json = "application/json"
+    case urlEncoded = "application/x-www-form-urlencoded"
 }
 
 public enum WKHTTPHeaderField: String {
@@ -45,6 +46,7 @@ public extension WKRequest {
     // Defaults
     var method: WKHTTPMethod { return .get }
     var contentType: WKHTTPContentType { return .json }
+    var acceptType: WKHTTPContentType { return .json }
     var queryParams: WKHTTPParams? { return nil }
     var body: WKHTTPParams? { return nil }
     var headers: WKHTTPHeaders? { return nil }
@@ -61,8 +63,20 @@ extension WKRequest {
     /// - Returns: Encoded JSON
     private func requestBodyFrom(params: WKHTTPParams?) -> Data? {
         guard let params = params else { return nil }
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: params, options: []) else {
-            return nil
+        var httpBody : Data?
+        switch contentType {
+        case .json:
+            httpBody = try? JSONSerialization.data(withJSONObject: params, options: [])
+        case .urlEncoded:
+            var requestBodyComponents = URLComponents()
+            var queryItems = [ URLQueryItem ]()
+            for (name, value) in params {
+                let queryItem = URLQueryItem(name: name, value: String(describing: value))
+                print("\(queryItem)")
+                queryItems.append(queryItem)
+            }
+            requestBodyComponents.queryItems = queryItems
+            httpBody = requestBodyComponents.query?.data(using: .utf8)
         }
         return httpBody
     }
@@ -91,7 +105,7 @@ extension WKRequest {
         request.httpBody = requestBodyFrom(params: body)
         let defaultHeaders: WKHTTPHeaders = [
             WKHTTPHeaderField.contentType.rawValue: contentType.rawValue,
-            WKHTTPHeaderField.acceptType.rawValue: contentType.rawValue
+            WKHTTPHeaderField.acceptType.rawValue: acceptType.rawValue
         ]
         request.allHTTPHeaderFields = (headers ?? [:]).merging(defaultHeaders, uniquingKeysWith: { (first, _) in first })
         return request
