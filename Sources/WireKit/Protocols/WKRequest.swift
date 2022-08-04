@@ -33,6 +33,7 @@ public enum WKHTTPMethod: String {
 public protocol WKRequest {
     associatedtype ReturnType: Codable
     var path: String { get }
+    var url: URL? { get }
     var method: WKHTTPMethod { get }
     var contentType: WKHTTPContentType { get }
     var queryParams: WKHTTPParams? { get }
@@ -96,10 +97,17 @@ extension WKRequest {
     /// - Parameter baseURL: API Base URL to be used
     /// - Returns: A ready to use URLRequest
     func asURLRequest(baseURL: String) -> URLRequest? {
-        guard var urlComponents = URLComponents(string: baseURL) else { return nil }
-        urlComponents.path = "\(urlComponents.path)\(path)"
-        urlComponents.queryItems = queryItemsFrom(params: queryParams)
-        guard let finalURL = urlComponents.url else { return nil }
+        var finalURL: URL?
+        if let url = url {
+            finalURL = url
+        } else {
+            guard var urlComponents = URLComponents(string: baseURL) else { return nil }
+            urlComponents.path = "\(urlComponents.path)\(path)"
+            urlComponents.queryItems = queryItemsFrom(params: queryParams)
+            finalURL = urlComponents.url
+        }
+        guard let finalURL = finalURL else { return nil }
+        
         var request = URLRequest(url: finalURL)
         request.httpMethod = method.rawValue
         request.httpBody = requestBodyFrom(params: body)
